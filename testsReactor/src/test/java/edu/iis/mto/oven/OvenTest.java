@@ -23,20 +23,27 @@ class OvenTest {
 
     private Oven oven;
 
-    private final int TARGET_TEMP = 180;
     private final int IRRELEVANT = 50;
-    private final int TIME = 25;
+    private ProgramStage stageOne;
+    private ProgramStage stageTwo;
+    private ProgramStage stageThree;
 
     @BeforeEach
     void setUp() {
         oven = new Oven(heatingModule, fan);
-        heatingSettings = HeatingSettings.builder().withTargetTemp(TARGET_TEMP).withTimeInMinutes(TIME).build();
+        int temp = 180;
+        int time = 25;
+        heatingSettings = HeatingSettings.builder().withTargetTemp(temp).withTimeInMinutes(time).build();
+        stageOne = ProgramStage.builder()
+                .withHeat(HeatType.HEATER).withTargetTemp(temp).withStageTime(time).build();
+        stageTwo = ProgramStage.builder()
+                .withHeat(HeatType.THERMO_CIRCULATION).withTargetTemp(temp).withStageTime(time).build();
+        stageThree = ProgramStage.builder()
+                .withHeat(HeatType.GRILL).withTargetTemp(temp).withStageTime(time).build();
     }
 
     @Test
     void programShouldCallHeatingModuleHeaterWithGivenSettings() {
-        ProgramStage stageOne = ProgramStage.builder()
-                .withHeat(HeatType.HEATER).withTargetTemp(TARGET_TEMP).withStageTime(TIME).build();
         List<ProgramStage> stages = List.of(stageOne);
         bakingProgram = BakingProgram.builder()
                 .withInitialTemp(IRRELEVANT).withStages(stages).build();
@@ -47,9 +54,7 @@ class OvenTest {
 
     @Test
     void programShouldCallHeatingModuleTermalCircuitWithGivenSettings_ShouldTurnOnAndOffTheFan() throws HeatingException {
-        ProgramStage stageOne = ProgramStage.builder()
-                .withHeat(HeatType.THERMO_CIRCULATION).withTargetTemp(TARGET_TEMP).withStageTime(TIME).build();
-        List<ProgramStage> stages = List.of(stageOne);
+        List<ProgramStage> stages = List.of(stageTwo);
         bakingProgram = BakingProgram.builder()
                 .withInitialTemp(IRRELEVANT).withStages(stages).build();
         oven.start(bakingProgram);
@@ -61,15 +66,12 @@ class OvenTest {
 
     @Test
     void programShouldCallHeatingModuleGrillWithGivenSettings_ShouldTurnOffTheFan() throws HeatingException {
-        ProgramStage stageOne = ProgramStage.builder()
-                .withHeat(HeatType.GRILL).withTargetTemp(TARGET_TEMP).withStageTime(TIME).build();
-        List<ProgramStage> stages = List.of(stageOne);
+        List<ProgramStage> stages = List.of(stageThree);
         bakingProgram = BakingProgram.builder()
                 .withInitialTemp(IRRELEVANT).withStages(stages).build();
         Mockito.when(fan.isOn()).thenReturn(true);
 
         oven.start(bakingProgram);
-
 
         Mockito.verify(heatingModule).grill(heatingSettings);
         Mockito.verify(fan).isOn();
