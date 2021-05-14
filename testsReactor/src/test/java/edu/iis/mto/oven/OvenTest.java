@@ -62,4 +62,20 @@ class OvenTest {
         Mockito.verify(fan).off();
     }
 
+    @Test
+    void programShouldCallHeatingModuleGrillWithGivenSettings() throws HeatingException {
+        int targetTemp = 180;
+        int irrelevant = 200;
+        int time = 25;
+        heatingSettings = HeatingSettings.builder().withTargetTemp(targetTemp).withTimeInMinutes(time).build();
+        ProgramStage stageOne = ProgramStage.builder()
+                .withHeat(HeatType.GRILL).withTargetTemp(targetTemp).withStageTime(time).build();
+        List<ProgramStage> stages = List.of(stageOne);
+        bakingProgram = BakingProgram.builder()
+                .withInitialTemp(irrelevant).withStages(stages).build();
+        oven.start(bakingProgram);
+
+        Mockito.verify(heatingModule).grill(heatingSettings);
+    }
+
 }
