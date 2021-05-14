@@ -29,7 +29,7 @@ class OvenTest {
     }
 
     @Test
-    void programShouldCallHeatingModuleWithGivenTemperatureAndTime() {
+    void programShouldCallHeatingModuleHeaterWithGivenSettings() {
         int targetTemp = 180;
         int irrelevant = 50;
         int time = 25;
@@ -42,6 +42,24 @@ class OvenTest {
         oven.start(bakingProgram);
 
         Mockito.verify(heatingModule).heater(heatingSettings);
+    }
+
+    @Test
+    void programShouldCallHeatingModuleTermalCircuitWithGivenSettings_ShouldTurnOnAndOffTheFan() throws HeatingException {
+        int targetTemp = 180;
+        int irrelevant = 50;
+        int time = 25;
+        heatingSettings = HeatingSettings.builder().withTargetTemp(targetTemp).withTimeInMinutes(time).build();
+        ProgramStage stageOne = ProgramStage.builder()
+                .withHeat(HeatType.THERMO_CIRCULATION).withTargetTemp(targetTemp).withStageTime(time).build();
+        List<ProgramStage> stages = List.of(stageOne);
+        bakingProgram = BakingProgram.builder()
+                .withInitialTemp(irrelevant).withStages(stages).build();
+        oven.start(bakingProgram);
+
+        Mockito.verify(heatingModule).termalCircuit(heatingSettings);
+        Mockito.verify(fan).on();
+        Mockito.verify(fan).off();
     }
 
 }
