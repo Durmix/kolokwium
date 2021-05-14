@@ -3,6 +3,7 @@ package edu.iis.mto.oven;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -76,6 +77,25 @@ class OvenTest {
         Mockito.verify(heatingModule).grill(heatingSettings);
         Mockito.verify(fan).isOn();
         Mockito.verify(fan).off();
+    }
+
+    @Test
+    void programShouldCallGivenMethodsInCorrectOrder() throws HeatingException {
+        List<ProgramStage> stages = List.of(stageOne, stageTwo, stageThree);
+        bakingProgram = BakingProgram.builder()
+                .withInitialTemp(IRRELEVANT).withStages(stages).build();
+        Mockito.when(fan.isOn()).thenReturn(true);
+
+        oven.start(bakingProgram);
+
+        InOrder order = Mockito.inOrder(heatingModule, fan);
+        order.verify(fan).isOn();
+        order.verify(heatingModule).heater(heatingSettings);
+        order.verify(fan).on();
+        order.verify(heatingModule).termalCircuit(heatingSettings);
+        order.verify(fan).off();
+        order.verify(fan).isOn();
+        order.verify(heatingModule).grill(heatingSettings);
     }
 
 }
