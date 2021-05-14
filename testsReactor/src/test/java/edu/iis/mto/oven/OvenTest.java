@@ -24,7 +24,8 @@ class OvenTest {
 
     private Oven oven;
 
-    private final int IRRELEVANT = 50;
+    private final int INITIAL_TEMP_POSITIVE = 50;
+    private final int INITIAL_TEMP_NEGATIVE = -10;
     private ProgramStage stageOne;
     private ProgramStage stageTwo;
     private ProgramStage stageThree;
@@ -47,17 +48,31 @@ class OvenTest {
     void programShouldCallHeatingModuleHeaterWithGivenSettings() {
         List<ProgramStage> stages = List.of(stageOne);
         bakingProgram = BakingProgram.builder()
-                .withInitialTemp(IRRELEVANT).withStages(stages).build();
+                .withInitialTemp(INITIAL_TEMP_POSITIVE).withStages(stages).build();
         oven.start(bakingProgram);
 
         Mockito.verify(heatingModule).heater(heatingSettings);
     }
 
     @Test
+    void programShouldCallHeatingModuleHeaterAndTermalCircuitWithGivenSettings_ShouldTurnOnAndOffTheFan() throws HeatingException {
+        List<ProgramStage> stages = List.of(stageTwo);
+        bakingProgram = BakingProgram.builder()
+                .withInitialTemp(INITIAL_TEMP_POSITIVE).withStages(stages).build();
+        oven.start(bakingProgram);
+
+        Mockito.verify(heatingModule).heater(HeatingSettings.builder()
+                .withTargetTemp(INITIAL_TEMP_POSITIVE).withTimeInMinutes(0).build());
+        Mockito.verify(heatingModule).termalCircuit(heatingSettings);
+        Mockito.verify(fan).on();
+        Mockito.verify(fan).off();
+    }
+
+    @Test
     void programShouldCallHeatingModuleTermalCircuitWithGivenSettings_ShouldTurnOnAndOffTheFan() throws HeatingException {
         List<ProgramStage> stages = List.of(stageTwo);
         bakingProgram = BakingProgram.builder()
-                .withInitialTemp(IRRELEVANT).withStages(stages).build();
+                .withInitialTemp(INITIAL_TEMP_NEGATIVE).withStages(stages).build();
         oven.start(bakingProgram);
 
         Mockito.verify(heatingModule).termalCircuit(heatingSettings);
@@ -66,10 +81,26 @@ class OvenTest {
     }
 
     @Test
+    void programShouldCallHeatingModuleHeaterAndGrillWithGivenSettings_ShouldTurnOffTheFan() throws HeatingException {
+        List<ProgramStage> stages = List.of(stageThree);
+        bakingProgram = BakingProgram.builder()
+                .withInitialTemp(INITIAL_TEMP_POSITIVE).withStages(stages).build();
+        Mockito.when(fan.isOn()).thenReturn(true);
+
+        oven.start(bakingProgram);
+
+        Mockito.verify(heatingModule).heater(HeatingSettings.builder()
+                .withTargetTemp(INITIAL_TEMP_POSITIVE).withTimeInMinutes(0).build());
+        Mockito.verify(heatingModule).grill(heatingSettings);
+        Mockito.verify(fan).isOn();
+        Mockito.verify(fan).off();
+    }
+
+    @Test
     void programShouldCallHeatingModuleGrillWithGivenSettings_ShouldTurnOffTheFan() throws HeatingException {
         List<ProgramStage> stages = List.of(stageThree);
         bakingProgram = BakingProgram.builder()
-                .withInitialTemp(IRRELEVANT).withStages(stages).build();
+                .withInitialTemp(INITIAL_TEMP_NEGATIVE).withStages(stages).build();
         Mockito.when(fan.isOn()).thenReturn(true);
 
         oven.start(bakingProgram);
@@ -83,7 +114,7 @@ class OvenTest {
     void programShouldCallGivenMethodsInCorrectOrder() throws HeatingException {
         List<ProgramStage> stages = List.of(stageOne, stageTwo, stageThree);
         bakingProgram = BakingProgram.builder()
-                .withInitialTemp(IRRELEVANT).withStages(stages).build();
+                .withInitialTemp(INITIAL_TEMP_POSITIVE).withStages(stages).build();
         Mockito.when(fan.isOn()).thenReturn(true);
 
         oven.start(bakingProgram);
